@@ -50,19 +50,19 @@ namespace config
 	{
 		if (line.empty())
 			return false;
-		int start_pos = 0, end_pos = line.size() - 1, pos, s_startpos, e_endpos;
+		int start_pos = 0, end_pos = line.size() - 1, pos, s_startpos, s_endpos;
 		if ((pos = line.find("#")) != -1)
 		{
 			if (pos == 0)
 				return false;
 			end_pos = pos - 1;
 		}
-		if ((s_startpos = line.find("[")) != -1 && (e_endpos = line.find("]")) != -1)
+		if (((s_startpos = line.find("[")) != -1) && ((s_endpos = line.find("]"))) != -1)
 		{
-			section = line.substr(s_startpos + 1, e_endpos - 1);
+			section = line.substr(s_startpos + 1, s_endpos - 1);
 			return true;
 		}
-		std::string new_line = line.substr(s_startpos, start_pos + 1 - end_pos);
+		std::string new_line = line.substr(start_pos, start_pos + 1 - end_pos);
 		if ((pos = new_line.find('=')) == -1)
 			return false;
 		key = new_line.substr(0, pos);
@@ -79,7 +79,109 @@ namespace config
 		{
 			value.replace(pos, 1, "");
 		}
-		
+
 		return true;
+	}
+
+	bool Config::ReadConfig(const std::string& filename)
+	{
+		settings_.clear();
+		std::ifstream infile(filename.c_str());
+
+		if (!infile)
+			return false;
+
+		std::string	line, key, value, section;
+		std::map<std::string, std::string>k_v;
+		std::map<std::string, std::map<std::string, std::string>>::iterator it;
+		while (getline(infile, line))
+		{
+			if (AnalyseLine(line, section, key, value))
+			{
+				it = settings_.find(section);
+				if (it != settings_.end())
+				{
+					k_v[key] = value;
+					it->second = k_v;
+				}
+				else
+				{
+					k_v.clear();
+					settings_.insert(std::make_pair(section, k_v));
+				}
+			}
+			key.clear();
+			value.clear();
+		}
+		infile.close();
+
+		return true;
+	}
+
+	std::string Config::ReadString(const char* section, const char* item, const char* default_value)
+	{
+		std::string tmp_s(section);
+		std::string tmp_i(item);
+		std::string def(default_value);
+		std::map<std::string, std::string>k_v;
+		std::map<std::string, std::string>::iterator it_item;
+		std::map<std::string, std::map<std::string, std::string>>::iterator it;
+
+		it = settings_.find(tmp_s);
+		if (it == settings_.end())
+		{
+			return def;
+		}
+		k_v = it->second;
+		it_item = k_v.find(tmp_i);
+		if (it_item == k_v.end())
+		{
+			return def;
+		}
+		return it_item->second;
+	}
+
+	int Config::ReadInt(const char* section, const char* item, const int& default_value)
+	{
+		std::string tmp_s(section);
+		std::string tmp_i(item);
+		std::map<std::string, std::string>k_v;
+		std::map<std::string, std::string>::iterator it_item;
+		std::map<std::string, std::map<std::string, std::string>>::iterator it;
+
+		it = settings_.find(tmp_s);
+		if (it == settings_.end())
+		{
+			return default_value;
+		}
+		k_v = it->second;
+		it_item = k_v.find(tmp_i);
+		if (it_item == k_v.end())
+		{
+			return default_value;
+		}
+		return atoi(it_item->second.c_str());
+	}
+
+	float Config::ReadFloat(const char* section, const char* item, const float& default_value)
+	{
+		std::string tmp_s(section);
+		std::string tmp_i(item);
+		std::map<std::string, std::string>k_v;
+		std::map<std::string, std::string>::iterator it_item;
+		std::map<std::string, std::map<std::string, std::string>>::iterator it;
+
+		it = settings_.find(tmp_s);
+		if (it == settings_.end())
+		{
+			return default_value;
+		}
+		k_v = it->second;
+		it_item = k_v.find(tmp_i);
+		if (it_item == k_v.end())
+		{
+			return default_value;
+		}
+		return atoi(it_item->second.c_str());
 	}
 }
